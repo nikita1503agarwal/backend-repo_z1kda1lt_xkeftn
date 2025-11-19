@@ -1,48 +1,80 @@
 """
-Database Schemas
+Database Schemas for Professional Community App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model represents a MongoDB collection. The collection name is the lowercase
+of the class name.
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+These schemas are used by the built-in database tools for validation and by our API.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
+from datetime import datetime
 
-# Example schemas (replace with your own):
+# -----------------------------------------------------------------------------
+# Core app schemas
+# -----------------------------------------------------------------------------
 
-class User(BaseModel):
+class Professionaluser(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Professionals (users) in the community
+    Collection: "professionaluser"
     """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr = Field(..., description="Unique email")
+    headline: Optional[str] = Field(None, description="Short professional headline")
+    bio: Optional[str] = Field(None, description="About section")
+    avatar_url: Optional[str] = Field(None, description="Profile picture URL")
+    location: Optional[str] = Field(None, description="City, Country")
+    company: Optional[str] = Field(None, description="Current company")
+    role: Optional[str] = Field(None, description="Current role/title")
+    skills: List[str] = Field(default_factory=list, description="List of skills")
+    website: Optional[str] = Field(None, description="Personal/portfolio website")
+    is_active: bool = Field(default=True)
+
+class Topic(BaseModel):
+    """
+    Discussion topics/tags users can post under
+    Collection: "topic"
+    """
+    name: str = Field(..., description="Topic name, e.g., 'Product Management'")
+    slug: str = Field(..., description="URL-friendly unique slug")
+    description: Optional[str] = Field(None, description="Short description")
+
+class Post(BaseModel):
+    """
+    Posts created by professionals
+    Collection: "post"
+    """
+    author_id: str = Field(..., description="ID of Professionaluser")
+    content: str = Field(..., description="Text content of the post")
+    topic_slugs: List[str] = Field(default_factory=list, description="Associated topics by slug")
+    like_count: int = Field(default=0)
+    comment_count: int = Field(default=0)
+
+class Comment(BaseModel):
+    """
+    Comments on posts
+    Collection: "comment"
+    """
+    post_id: str = Field(..., description="ID of the post")
+    author_id: str = Field(..., description="ID of Professionaluser")
+    content: str = Field(..., description="Comment text")
+
+# -----------------------------------------------------------------------------
+# Example additional schemas kept for reference (not used directly by app UI)
+# -----------------------------------------------------------------------------
+
+class User(BaseModel):
+    name: str
+    email: str
+    address: str
+    age: Optional[int] = Field(None, ge=0, le=120)
+    is_active: bool = True
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    title: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    in_stock: bool = True
